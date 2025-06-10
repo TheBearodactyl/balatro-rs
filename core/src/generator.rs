@@ -20,8 +20,8 @@ impl Game {
             .not_selected()
             .clone()
             .into_iter()
-            .map(|c| Action::SelectCard(c));
-        return Some(combos);
+            .map(Action::SelectCard);
+        Some(combos)
     }
 
     // Get all legal Play actions that can be executed given current state
@@ -31,15 +31,15 @@ impl Game {
             return None;
         }
         // If no plays remaining, return None
-        if self.plays <= 0 {
+        if self.plays == 0 {
             return None;
         }
         // If no cards selected, return None
-        if self.available.selected().len() == 0 {
+        if self.available.selected().is_empty() {
             return None;
         }
         let combos = vec![Action::Play()].into_iter();
-        return Some(combos);
+        Some(combos)
     }
 
     // Get all legal Play actions that can be executed given current state
@@ -49,15 +49,15 @@ impl Game {
             return None;
         }
         // If no discards remaining, return None
-        if self.discards <= 0 {
+        if self.discards == 0 {
             return None;
         }
         // If no cards selected, return None
-        if self.available.selected().len() == 0 {
+        if self.available.selected().is_empty() {
             return None;
         }
         let combos = vec![Action::Discard()].into_iter();
-        return Some(combos);
+        Some(combos)
     }
 
     // Get all legal move card actions
@@ -84,7 +84,7 @@ impl Game {
             .map(|c| Action::MoveCard(MoveDirection::Right, c));
 
         let combos = left.chain(right);
-        return Some(combos);
+        Some(combos)
     }
 
     // Get cash out action
@@ -93,7 +93,7 @@ impl Game {
         if self.stage != Stage::PostBlind() {
             return None;
         }
-        return Some(vec![Action::CashOut(self.reward)].into_iter());
+        Some(vec![Action::CashOut(self.reward)].into_iter())
     }
 
     // Get next round action
@@ -102,7 +102,7 @@ impl Game {
         if self.stage != Stage::Shop() {
             return None;
         }
-        return Some(vec![Action::NextRound()].into_iter());
+        Some(vec![Action::NextRound()].into_iter())
     }
 
     // Get select blind action
@@ -112,9 +112,9 @@ impl Game {
             return None;
         }
         if let Some(blind) = self.blind {
-            return Some(vec![Action::SelectBlind(blind.next())].into_iter());
+            Some(vec![Action::SelectBlind(blind.next())].into_iter())
         } else {
-            return Some(vec![Action::SelectBlind(Blind::Small)].into_iter());
+            Some(vec![Action::SelectBlind(Blind::Small)].into_iter())
         }
     }
 
@@ -128,7 +128,7 @@ impl Game {
         if self.jokers.len() >= self.config.joker_slots {
             return None;
         }
-        return self.shop.gen_moves_buy_joker(self.money);
+        self.shop.gen_moves_buy_joker(self.money)
     }
 
     // Get all legal actions that can be executed given current state
@@ -142,7 +142,7 @@ impl Game {
         let select_blinds = self.gen_actions_select_blind();
         let buy_jokers = self.gen_actions_buy_joker();
 
-        return select_cards
+        select_cards
             .into_iter()
             .flatten()
             .chain(plays.into_iter().flatten())
@@ -151,7 +151,7 @@ impl Game {
             .chain(cash_outs.into_iter().flatten())
             .chain(next_rounds.into_iter().flatten())
             .chain(select_blinds.into_iter().flatten())
-            .chain(buy_jokers.into_iter().flatten());
+            .chain(buy_jokers.into_iter().flatten())
     }
 
     fn unmask_action_space_select_cards(&self, space: &mut ActionSpace) {
@@ -179,7 +179,7 @@ impl Game {
             return;
         }
         // Cannot play/discard if no cards selected
-        if self.available.selected().len() == 0 {
+        if self.available.selected().is_empty() {
             return;
         }
         // Can only play/discard is have remaining
@@ -270,7 +270,7 @@ impl Game {
         self.unmask_action_space_next_round(&mut space);
         self.unmask_action_space_select_blind(&mut space);
         self.unmask_action_space_buy_joker(&mut space);
-        return space;
+        space
     }
 }
 
@@ -328,11 +328,11 @@ mod tests {
         let mut space = ActionSpace::from(g.config.clone());
 
         // Default action space everything should be masked
-        assert!(space.select_card[0] == 0);
+        assert_eq!(space.select_card[0], 0);
 
         // Unmask card selects, we have all selects available
         g.unmask_action_space_select_cards(&mut space);
-        assert!(space.select_card[0] == 1);
+        assert_eq!(space.select_card[0], 1);
 
         // Make a fresh space
         space = ActionSpace::from(g.config.clone());
@@ -343,9 +343,9 @@ mod tests {
         }
         g.unmask_action_space_select_cards(&mut space);
         // Cannot select first and second, can select third
-        assert!(space.select_card[0] == 0);
-        assert!(space.select_card[1] == 0);
-        assert!(space.select_card[2] == 1);
+        assert_eq!(space.select_card[0], 0);
+        assert_eq!(space.select_card[1], 0);
+        assert_eq!(space.select_card[2], 1);
     }
 
     #[test]
@@ -356,11 +356,11 @@ mod tests {
         let mut space = ActionSpace::from(g.config.clone());
 
         // Default action space everything should be masked
-        assert!(space.select_card[0] == 0);
+        assert_eq!(space.select_card[0], 0);
 
         // Unmask card selects, we have all selects available
         g.unmask_action_space_select_cards(&mut space);
-        assert!(space.select_card[0] == 1);
+        assert_eq!(space.select_card[0], 1);
 
         // Make a fresh space
         space = ActionSpace::from(g.config.clone());
@@ -371,16 +371,16 @@ mod tests {
         }
         g.unmask_action_space_select_cards(&mut space);
         for i in 0..space.select_card.len() - 1 {
-            assert!(space.select_card[i] == 0);
+            assert_eq!(space.select_card[i], 0);
         }
 
         // If stage is not blind, don't alter space
         g.stage = Stage::Shop();
         space = ActionSpace::from(g.config.clone());
         space.select_card[0] = 1;
-        assert!(space.select_card[0] == 1);
+        assert_eq!(space.select_card[0], 1);
         g.unmask_action_space_select_cards(&mut space);
-        assert!(space.select_card[0] == 1);
+        assert_eq!(space.select_card[0], 1);
     }
 
     #[test]
@@ -391,16 +391,16 @@ mod tests {
         let mut space = ActionSpace::from(g.config.clone());
 
         // Default action space everything should be masked
-        assert!(space.play[0] == 0);
-        assert!(space.discard[0] == 0);
+        assert_eq!(space.play[0], 0);
+        assert_eq!(space.discard[0], 0);
 
-        for c in g.available.cards()[0..5].to_vec() {
+        for c in g.available.cards()[0..5].iter().copied() {
             g.select_card(c).unwrap();
         }
         // Unmask play/discard
         g.unmask_action_space_play_and_discard(&mut space);
-        assert!(space.play[0] == 1);
-        assert!(space.discard[0] == 1);
+        assert_eq!(space.play[0], 1);
+        assert_eq!(space.discard[0], 1);
     }
 
     #[test]
@@ -412,10 +412,10 @@ mod tests {
         // Default action space everything should be masked, since no cards available yet
         assert_eq!(g.available.cards().len(), 0);
         for i in 0..space.move_card_left.len() {
-            assert!(space.move_card_left[i] == 0);
+            assert_eq!(space.move_card_left[i], 0);
         }
         for i in 0..space.move_card_right.len() {
-            assert!(space.move_card_right[i] == 0);
+            assert_eq!(space.move_card_right[i], 0);
         }
 
         // deal and make available
@@ -426,10 +426,10 @@ mod tests {
         // Should be able to move left every available card except leftmost
         let available = g.available.cards().len();
         for i in 0..available - 1 {
-            assert!(space.move_card_left[i] == 1);
+            assert_eq!(space.move_card_left[i], 1);
         }
         for i in 0..available - 1 {
-            assert!(space.move_card_right[i] == 1);
+            assert_eq!(space.move_card_right[i], 1);
         }
 
         // Even when selected, we can still move cards
@@ -442,10 +442,10 @@ mod tests {
         space = ActionSpace::from(g.config.clone());
         g.unmask_action_space_move_cards(&mut space);
         for i in 0..available - 1 {
-            assert!(space.move_card_left[i] == 1);
+            assert_eq!(space.move_card_left[i], 1);
         }
         for i in 0..available - 1 {
-            assert!(space.move_card_right[i] == 1);
+            assert_eq!(space.move_card_right[i], 1);
         }
     }
 }

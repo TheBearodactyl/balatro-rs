@@ -44,14 +44,14 @@ pub enum GameError {
     InvalidActionSpace,
 }
 
-impl std::convert::From<ActionSpaceError> for GameError {
+impl From<ActionSpaceError> for GameError {
     fn from(_err: ActionSpaceError) -> GameError {
         GameError::InvalidActionSpace
     }
 }
 
 #[cfg(feature = "python")]
-impl std::convert::From<GameError> for PyErr {
+impl From<GameError> for PyErr {
     fn from(err: GameError) -> PyErr {
         PyException::new_err(err.to_string())
     }

@@ -1,3 +1,4 @@
+// PERSONA!!!!
 use crate::card::Suit;
 use crate::effect::Effects;
 use crate::game::Game;
@@ -7,7 +8,7 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 use strum::{EnumIter, IntoEnumIterator};
 
-pub trait Joker: std::fmt::Debug + Clone {
+pub trait Joker: fmt::Debug + Clone {
     fn name(&self) -> String;
     fn desc(&self) -> String;
     fn cost(&self) -> usize;
@@ -138,7 +139,7 @@ make_jokers!(
 
 impl Jokers {
     pub(crate) fn by_rarity(rarirty: Rarity) -> Vec<Self> {
-        return Self::iter().filter(|j| j.rarity() == rarirty).collect();
+        Self::iter().filter(|j| j.rarity() == rarirty).collect()
     }
 }
 
